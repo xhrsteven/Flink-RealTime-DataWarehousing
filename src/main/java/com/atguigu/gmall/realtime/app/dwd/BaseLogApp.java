@@ -138,7 +138,6 @@ public class BaseLogApp {
 
         SingleOutputStreamOperator<String> pageDS=jsonDSWithFlag.process(
                 new ProcessFunction<JSONObject, String>() {
-
                     @Override
                     public void processElement(JSONObject jsonObj, Context ctx, Collector<String> out) throws Exception {
                         //获取启动日志标记
@@ -151,16 +150,20 @@ public class BaseLogApp {
                             //如果是启动日志，输出到启动侧输出流
                             ctx.output(startTag,dataStr);
                         }else{
-                            //如果不是启动日志
+                            //如果不是启动日志 则为页面日志或者曝光日志(携带页面信息)
+                            System.out.println("PageString:" + dataStr);
+
                             JSONArray displays = jsonObj.getJSONArray("display");
 
                             if(displays !=null && displays.size()>0){
                                 //遍历曝光日志 输出到侧输出流
-                                for(int i = 0; i<displays.size(); i++){
+                                for(int i = 0; i< displays.size(); i++){
                                     JSONObject displayJsonObj = displays.getJSONObject(i);
                                     //获取页面id
                                     String pageId = jsonObj.getJSONObject("page").getString("page_id");
+                                    //给每条曝光信息添加上 pageId
                                     displayJsonObj.put("page_id",pageId);
+                                    //将曝光数据输出到测输出流
                                     ctx.output(displayTag,displayJsonObj.toString());
                                 }
                             }else{
