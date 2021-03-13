@@ -2,6 +2,7 @@ package com.atguigu.gmall.realtime.utils;
 
 //查询数据的工具类
 
+import com.atguigu.gmall.realtime.bean.TableProcess;
 import com.google.common.base.CaseFormat;
 import org.apache.commons.beanutils.BeanUtils;
 
@@ -84,10 +85,10 @@ public class MySQLUtil {
         }
     }
 
-//    public static void main(String[] args) {
-//        List<TableProcess> list = queryList("select * from table_process", TableProcess.class, true);
-//        for (TableProcess tableProcess : list) {
-//            System.out.println(tableProcess);
-//        }
-//    }
+    public static void main(String[] args) {
+        List<TableProcess> list = queryList("select * from table_process", TableProcess.class, true);
+        for (TableProcess tableProcess : list) {
+            System.out.println(tableProcess);
+        }
+    }
 }
