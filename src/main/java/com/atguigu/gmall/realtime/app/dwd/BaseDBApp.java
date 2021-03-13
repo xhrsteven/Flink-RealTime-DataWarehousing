@@ -4,14 +4,21 @@ package com.atguigu.gmall.realtime.app.dwd;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.atguigu.gmall.realtime.app.func.TableProcessFunction;
+import com.atguigu.gmall.realtime.bean.TableProcess;
 import com.atguigu.gmall.realtime.utils.MyKafkaUtil;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.state.filesystem.FsStateBackend;
 import org.apache.flink.streaming.api.CheckpointingMode;
+import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
+import org.apache.flink.util.Collector;
+import org.apache.flink.util.OutputTag;
 
 public class BaseDBApp {
     public static void main(String[] args) throws Exception{
@@ -64,6 +71,21 @@ public class BaseDBApp {
         );
 
 //        filterDS.print("json>>>");
+
+        //动态分流 事实表放主流输出kafka dwd层 维度表 通过侧输出流 写入Hbase
+        //5.1定义输出到Hbase测输出流标签
+        OutputTag<JSONObject> hbaseTag = new OutputTag<JSONObject>(TableProcess.SINK_TYPE_HBASE){};
+
+        //5.2 主流 写回到Kafka
+        SingleOutputStreamOperator<JSONObject> kafkaDS = filterDS.process(
+                new TableProcessFunction(hbaseTag)
+        );
+
+        //5.3 获取侧输出流 写到Hbase
+        DataStream<JSONObject> hbaseDS = kafkaDS.getSideOutput(hbaseTag);
+
+        
+
 
         env.execute();
     }

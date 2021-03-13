@@ -85,10 +85,10 @@ public class MySQLUtil {
         }
     }
 
-    public static void main(String[] args) {
-        List<TableProcess> list = queryList("select * from table_process", TableProcess.class, true);
-        for (TableProcess tableProcess : list) {
-            System.out.println(tableProcess);
-        }
-    }
+//    public static void main(String[] args) {
+//        List<TableProcess> list = queryList("select * from table_process", TableProcess.class, true);
+//        for (TableProcess tableProcess : list) {
+//            System.out.println(tableProcess);
+//        }
+//    }
 }
