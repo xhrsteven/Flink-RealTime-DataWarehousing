@@ -77,6 +77,7 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
             String key = sourceTable+ ":"+ operateType;
             //===================将从配置表中查询到配置信息，保存到内存的map集合中===============
             tableProcessMap.put(key,tableProcess);
+
             //===================如果当前配置项是维度表需要向HBASE表中保存数据 判断Phoenix中是否存在这张表=======
             if (TableProcess.SINK_TYPE_HBASE.equals(sinkType) && "insert".equals(operateType)){
                 boolean notExist = existsTables.add(sourceTable);
@@ -85,7 +86,6 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
                     //检查Phoenix中是否存在这种表
                     // 有可能存在 只不过是应用缓存被清空了，导致当前表没有缓存 这种情况不续签创建表
                     checkTable(sinkTable,sinkColumns,sinkPk,sinkExtend);
-
                 }
             }
         }
@@ -93,8 +93,6 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
             throw new RuntimeException("没有读到数据库配置表中数据");
         }
     }
-
-
 
     private void checkTable(String tableName, String fields,String pk, String ext) {
         //如果在配置表中没有配置主键，需要给主键默认值
@@ -144,12 +142,66 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
                 }
             }
         }
-
     }
 
-    //每过来一个元素 方法执行一次
+    //每过来一个元素 方法执行一次 主要任务是根据内存中配置表Map 对当前进来的元素进行分流处理
     @Override
-    public void processElement(JSONObject jsonObject, Context ctx, Collector<JSONObject> out) throws Exception {
+    public void processElement(JSONObject jsonObj, Context ctx, Collector<JSONObject> out) throws Exception {
+        String table = jsonObj.getString("table");
+        String type = jsonObj.getString("type");
+        //注意：问题修复 如果使用Maxwell bootstrap同步历史数据， 这个时候操作类型叫bootstrap-insert
+        if ("bootstrap-insert".equals(type)) {
+            type = "insert";
+            jsonObj.put("type",type);
+        }
+        //从内存中获取配置信息
+        if(tableProcessMap != null && tableProcessMap.size()>0){
+            //根据表名和操作类型拼接key
+            String key = table + ":" +type;
 
+            TableProcess tableProcess = tableProcessMap.get(key);
+
+            //如果获取到了该元素对应的配置信息
+            if (tableProcess != null) {
+                //获取sinkTable, 指明这条数据应该发往何处
+                //如果是维度数据，那么对应的是Phoenix中的表名
+                jsonObj.put("sink_table",tableProcess.getSinkTable());
+                String sinkColumns = tableProcess.getSinkColumns();
+                //如果指定了sinkColumn,需要对保留的字段进行过滤处理
+                if (sinkColumns != null && sinkColumns.length()>0) {
+                    filterColumn(jsonObj.getJSONObject("data"),sinkColumns);
+                }
+            }else{
+                System.out.println("No this Key:" + key + " in Mysql");
+            }
+            //根据sinkType将数据输出到不同的流
+            if (tableProcess != null && tableProcess.getSinkType().equals(TableProcess.SINK_TYPE_HBASE)) {
+                //如果sinktype = Hbase 通过侧输出流输出维度数据
+                ctx.output(outputTag,jsonObj);
+            }else if(tableProcess != null && tableProcess.getSinkType().equals(TableProcess.SINK_TYPE_KAFKA)){
+                //如果sinktype = kafka 通过主流输出 事实数据
+                out.collect(jsonObj);
+            }
+        }
+    }
+
+    //对data中的数据进行过滤
+    private void filterColumn(JSONObject data, String sinkColumns) {
+        //sinkColums 保留列
+        String[] cols = sinkColumns.split(",");
+        //为了判断是否包含某个元素，将数值转换集合
+        List<String> columnList = Arrays.asList(cols);
+
+        //获取json对象中封装的键值对 每个键值对封装为ENTRY类型
+        Set<Map.Entry<String, Object>> entrySet = data.entrySet();
+        //集合转成迭代器，定义一个迭代器
+        Iterator<Map.Entry<String, Object>> it = entrySet.iterator();
+        //迭代器删除
+        for (;it.hasNext();) {
+            Map.Entry<String, Object> entry = it.next();
+            if (!columnList.contains(entry.getKey())) {
+                it.remove();
+            }
+        }
     }
 }

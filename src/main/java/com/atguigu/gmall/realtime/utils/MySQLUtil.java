@@ -2,7 +2,6 @@ package com.atguigu.gmall.realtime.utils;
 
 //查询数据的工具类
 
-import com.atguigu.gmall.realtime.bean.TableProcess;
 import com.google.common.base.CaseFormat;
 import org.apache.commons.beanutils.BeanUtils;
 

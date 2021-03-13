@@ -84,7 +84,10 @@ public class BaseDBApp {
         //5.3 获取侧输出流 写到Hbase
         DataStream<JSONObject> hbaseDS = kafkaDS.getSideOutput(hbaseTag);
 
-        
+        kafkaDS.print("kafka >>>>>");
+        hbaseDS.print("hbase >>>>");
+
+
 
 
         env.execute();
