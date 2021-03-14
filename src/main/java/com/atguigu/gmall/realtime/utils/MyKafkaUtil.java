@@ -21,7 +21,6 @@ public class MyKafkaUtil {
         Properties props = new Properties();
         props.setProperty(ConsumerConfig.GROUP_ID_CONFIG,groupId);
         props.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,KafkaServer);
-
         return new FlinkKafkaConsumer<String>(topic,new SimpleStringSchema(),props);
     }
 

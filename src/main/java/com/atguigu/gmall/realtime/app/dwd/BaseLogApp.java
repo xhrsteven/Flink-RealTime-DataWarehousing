@@ -38,16 +38,15 @@ public class BaseLogApp {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
         //1.2设置并行度--Kafka分区
-        env.setParallelism(4);
+        env.setParallelism(5);
 
         //1.3设置checkpoint,每5000ms开始一次checkpoint，模式默认EXACTLY_ONCE
 
-        env.enableCheckpointing(5000, CheckpointingMode.EXACTLY_ONCE);
-        env.getCheckpointConfig().setCheckpointTimeout(60000);
-        env.setStateBackend(new FsStateBackend("hdfs://hadoop01:8020/flink/checkpoint/baselogApp"));
+//        env.enableCheckpointing(5000, CheckpointingMode.EXACTLY_ONCE);
+//        env.getCheckpointConfig().setCheckpointTimeout(60000);
+//        env.setStateBackend(new FsStateBackend("hdfs://hadoop01:8020/flink/checkpoint/baselogApp"));
 
 //        System.setProperty("HADOOP_USER_NAME","root");
-
 
         //2.从kafka读取数据
         //2.1调用Kafka工具类 获取FlinkKafkaConsumer
@@ -150,8 +149,9 @@ public class BaseLogApp {
                             //如果是启动日志，输出到启动侧输出流
                             ctx.output(startTag,dataStr);
                         }else{
+                            out.collect(dataStr);
                             //如果不是启动日志 则为页面日志或者曝光日志(携带页面信息)
-                            System.out.println("PageString:" + dataStr);
+//                            System.out.println("PageString:" + dataStr);
 
                             JSONArray displays = jsonObj.getJSONArray("display");
 
@@ -166,9 +166,6 @@ public class BaseLogApp {
                                     //将曝光数据输出到测输出流
                                     ctx.output(displayTag,displayJsonObj.toString());
                                 }
-                            }else{
-                                //如果不是曝光日志，说明不是页面日志，输出到主流
-                            out.collect(dataStr);
                             }
 
                         }
@@ -181,9 +178,9 @@ public class BaseLogApp {
         DataStream<String> startDS = pageDS.getSideOutput(startTag);
         DataStream<String> displayDS = pageDS.getSideOutput(displayTag);
 
-        pageDS.print("page>>>>");
-        startDS.print("start>>>>");
-        displayDS.print("display>>>>");
+       pageDS.print("page>>>>");
+//        startDS.print("start>>>>");
+     displayDS.print("display>>>>");
 
         //6.将不同的流写回到不同的topic中 --dwd层
         FlinkKafkaProducer<String> StartSink = MyKafkaUtil.getKafkaSink(TOPIC_START);
@@ -192,11 +189,11 @@ public class BaseLogApp {
 
         FlinkKafkaProducer<String> DisplaySink = MyKafkaUtil.getKafkaSink(TOPIC_DISPLAY);
 
-        startDS.addSink(DisplaySink);
+        displayDS.addSink(DisplaySink);
 
         FlinkKafkaProducer<String> PageSink = MyKafkaUtil.getKafkaSink(TOPIC_PAGE);
 
-        startDS.addSink(PageSink);
+        pageDS.addSink(PageSink);
 
 
 

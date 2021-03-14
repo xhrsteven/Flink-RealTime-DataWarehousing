@@ -93,7 +93,7 @@ public class BaseDBApp {
 //        hbaseDS.print("hbase >>>>");
 
         //6.将维度数据保存到Phoenix对应的维度表中
-        hbaseDS.print("hbaseDS:::::");
+        hbaseDS.print("hbase :::::");
         hbaseDS.addSink(new DimSink());
 //
         //7.将事实数据写回到kafka的dwd层
