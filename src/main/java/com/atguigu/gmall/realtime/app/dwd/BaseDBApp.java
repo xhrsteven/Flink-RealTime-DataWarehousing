@@ -99,10 +99,10 @@ public class BaseDBApp {
         //7.将事实数据写回到kafka的dwd层
         FlinkKafkaProducer<JSONObject> kafkaSinkBySchema = MyKafkaUtil.getKafkaSinkBySchema(
                 new KafkaSerializationSchema<JSONObject>() {
-                    @Override
-                    public void open(SerializationSchema.InitializationContext context) throws Exception {
-                        System.out.println("对json数据进行序列化操作");
-                    }
+//                    @Override
+//                    public void open(SerializationSchema.InitializationContext context) throws Exception {
+//                        System.out.println("对json数据进行序列化操作");
+//                    }
 
                     @Override
                     public ProducerRecord<byte[], byte[]> serialize(JSONObject jsonObj, @Nullable Long timestamp) {

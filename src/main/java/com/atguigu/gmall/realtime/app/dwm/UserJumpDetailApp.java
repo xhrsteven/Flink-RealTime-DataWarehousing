@@ -4,8 +4,8 @@ package com.atguigu.gmall.realtime.app.dwm;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.atguigu.gmall.realtime.utils.MyKafkaUtil;
-import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
-import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+//import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
+//import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.cep.*;
 import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.cep.pattern.conditions.SimpleCondition;
@@ -54,15 +54,15 @@ public class UserJumpDetailApp {
 //                env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
         //4.指定事件时间字段 --没有乱序的情况
-        SingleOutputStreamOperator<JSONObject> jsonObjWithTSDS = jsonObjDS.assignTimestampsAndWatermarks(
-                WatermarkStrategy.<JSONObject>forMonotonousTimestamps().withTimestampAssigner(
-                        new SerializableTimestampAssigner<JSONObject>() {
-                            @Override
-                            public long extractTimestamp(JSONObject jsonObj, long l) {
-                                return jsonObj.getLong("ts");
-                            }
-                        }
-                ));
+//        SingleOutputStreamOperator<JSONObject> jsonObjWithTSDS = jsonObjDS.assignTimestampsAndWatermarks(
+//                WatermarkStrategy.<JSONObject>forMonotonousTimestamps().withTimestampAssigner(
+//                        new SerializableTimestampAssigner<JSONObject>() {
+//                            @Override
+//                            public long extractTimestamp(JSONObject jsonObj, long l) {
+//                                return jsonObj.getLong("ts");
+//                            }
+//                        }
+//                ));
 
         //5.按照mid进行分组
         KeyedStream<JSONObject, String> keyByMidDS = jsonObjDS.keyBy(
