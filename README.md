@@ -12,4 +12,7 @@
 ![image](https://user-images.githubusercontent.com/31069867/111018998-633c7780-83f7-11eb-84cb-c3f2d6ca0020.png)
 ![image](https://user-images.githubusercontent.com/31069867/111019016-7bac9200-83f7-11eb-90b6-0c698f577898.png)
 
+## 4. 优化1：加入盘路缓存优化
+订单宽表查询缓存， 未命中缓存查询数据库，同步缓存
+
 
