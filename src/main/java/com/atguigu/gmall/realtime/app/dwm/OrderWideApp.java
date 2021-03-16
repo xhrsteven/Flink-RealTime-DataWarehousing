@@ -45,7 +45,7 @@ public class OrderWideApp {
          */
         String orderInfoSourceTopic = "dwd_order_info";
         String orderDetailSourceTopic = "dwd_order_detail";
-        String groupId = "order_wide_group";
+        String groupId = "order_wide_group1";
         String orderWideSinkTopic = "dwm_order_wide";
 
         //2.1 读取订单数据
