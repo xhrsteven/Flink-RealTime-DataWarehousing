@@ -38,9 +38,9 @@ public class DimUtil {
             return dimJsonObj;
         }
 
-    public static void main(String[] args) {
-        JSONObject dimInfo = DimUtil.getDimInfoNoCache("DIM_BASE_TRADEMARK", Tuple2.of("id", "13"));
-
-        System.out.println(dimInfo);
-    }
+//    public static void main(String[] args) {
+//        JSONObject dimInfo = DimUtil.getDimInfoNoCache("DIM_BASE_TRADEMARK", Tuple2.of("id", "13"));
+//
+//        System.out.println(dimInfo);
+//    }
 }

@@ -40,7 +40,7 @@ public class BaseDBApp {
 
         //从Kafka的ODS层读取数据
         String topic ="ods_base_db_m";
-        String groupId = "ods_base_group";
+        String groupId = "ods_base_group1";
 
         //2.1通过工具类获取Kafka消费者
         FlinkKafkaConsumer<String> kafkasource = MyKafkaUtil.getKafkasource(topic, groupId);
@@ -56,29 +56,27 @@ public class BaseDBApp {
 //                return null;
 //            }
 //        })
+        //对数据进行结构的转换 String->JSONObject
+        DataStream<JSONObject> jsonObjDS = jsonStrDS.map(jsonStr -> JSON.parseObject(jsonStr));
 
-        SingleOutputStreamOperator<JSONObject> jsonObjDS = jsonStrDS.map(
-                jsonStr -> JSON.parseObject(jsonStr)
-        );
-
-
-//        jsonStrDS.map(JSON::parseObject);
+//        jsonObjDS.print("json>>>>>");
+//        jsonDS.map(JSON::parseObject);
 
         //3.对数据进行ETL清洗 如果data为空，或者长度不满足，将数据过滤
         SingleOutputStreamOperator<JSONObject> filterDS = jsonObjDS.filter(
                 jsonObj -> {
                     boolean flag = jsonObj.getString("table") != null
-                            && jsonObj.getJSONObject("data") != null
+                            && jsonObj.getJSONArray("data") != null
                             && jsonObj.getString("data").length() >= 3;
-
+//                    System.out.println(flag);
                     return flag;
                 }
         );
 
-//        filterDS.print("filterJson>>>");
+       filterDS.print("filterJson>>>");
 
         //动态分流 事实表放主流输出kafka dwd层 维度表 通过侧输出流 写入Hbase
-        //5.1定义输出到Hbase测输出流标签
+//        5.1定义输出到Hbase测输出流标签
         OutputTag<JSONObject> hbaseTag = new OutputTag<JSONObject>(TableProcess.SINK_TYPE_HBASE){};
 
         //5.2 主流 写回到Kafka 使用自定义 ProcessFunction 进行分流处理
@@ -89,8 +87,8 @@ public class BaseDBApp {
         //5.3 获取侧输出流 写到Hbase 获取侧输出流，即将通过 Phoenix 写到 Hbase 的数据
         DataStream<JSONObject> hbaseDS = kafkaDS.getSideOutput(hbaseTag);
 
-//        kafkaDS.print("kafka >>>>>");
-//        hbaseDS.print("hbase >>>>");
+        kafkaDS.print("kafka >>>>>");
+        hbaseDS.print("hbase >>>>");
 
         //6.将维度数据保存到Phoenix对应的维度表中
         hbaseDS.print("hbase :::::");
@@ -113,8 +111,8 @@ public class BaseDBApp {
                     }
                 }
         );
-        kafkaDS.print("kafka ::::");
-        kafkaDS.addSink(kafkaSinkBySchema);
+//        kafkaDS.print("kafka ::::");
+//        kafkaDS.addSink(kafkaSinkBySchema);
 
         env.execute();
     }

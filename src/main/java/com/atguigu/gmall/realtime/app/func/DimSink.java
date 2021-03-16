@@ -2,6 +2,7 @@ package com.atguigu.gmall.realtime.app.func;
 
 //写出维度数据Sink实现类
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.atguigu.gmall.realtime.common.GmallConfig;
 import net.minidev.json.writer.ArraysMapper;
@@ -33,25 +34,33 @@ public class DimSink extends RichSinkFunction<JSONObject> {
         //获取目标表的名称
         String tableName = jsonObj.getString("sink_table");
         //获取json中data
-        JSONObject dataJsonObj = jsonObj.getJSONObject("data");
-        if (dataJsonObj != null && dataJsonObj.size()>0) {
-            //根据data中属性和属性值 生产upsert语句
-            String upsertSql = genUpsertSql(tableName.toUpperCase(),dataJsonObj);
-            System.out.println("向Phoenix插入数据的SQL" + upsertSql);
+        JSONArray jsonArr = jsonObj.getJSONArray("data");
+        for (int i = 0; i < jsonArr.size(); i++) {
+            JSONObject dataJsonObj = jsonArr.getJSONObject(i);
+            if (dataJsonObj != null && dataJsonObj.size()>0) {
+                //根据data中属性和属性值 生产upsert语句
+                String upsertSql = genUpsertSql(tableName.toUpperCase(),dataJsonObj);
+                System.out.println("向Phoenix插入数据的SQL" + upsertSql);
 
-            PreparedStatement ps = null;
-            //执行SQL
-            try {
-                ps = conn.prepareStatement(upsertSql);
-                ps.execute();
-                //注意 执行完Phoenix插入操作，需要手动提交事务
-                conn.commit();
-                ps.close();
-            }catch (SQLException e){
-                e.printStackTrace();
-                throw new RuntimeException("插入数据失败");
+                PreparedStatement ps = null;
+                //执行SQL
+                try {
+                    ps = conn.prepareStatement(upsertSql);
+                    ps.execute();
+                    //注意 执行完Phoenix插入操作，需要手动提交事务
+                    conn.commit();
+                    ps.close();
+                }catch (SQLException e){
+                    e.printStackTrace();
+                    throw new RuntimeException("插入数据失败");
+                }finally {
+                    if(ps != null){
+                        ps.close();
+                    }
+                }
             }
         }
+
     }
     //根据data属性和值 生成向Phoenix中插入数据的SQL语句
     private String genUpsertSql(String tableName, JSONObject dataJsonObj) {

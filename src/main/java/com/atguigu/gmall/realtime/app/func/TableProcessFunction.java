@@ -2,6 +2,7 @@ package com.atguigu.gmall.realtime.app.func;
 
 //配置表函数
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.atguigu.gmall.realtime.bean.TableProcess;
 import com.atguigu.gmall.realtime.common.GmallConfig;
@@ -28,7 +29,7 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
     private Set<String> existsTables = new HashSet<>();
 
     //声明Phoenix的连接对象
-    Connection conn = null;
+    private Connection conn = null;
 
     //实例化函数对象的时候，将侧输出流标签也进行赋值
     public TableProcessFunction(OutputTag<JSONObject> outputTag) {
@@ -43,7 +44,7 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
         conn = DriverManager.getConnection(GmallConfig.PHOENIX_SERVER);
 
         //初始化配置表信息
-        refreshMeta();
+        initTableProcessMap();
 
         //开启一个定时任务
         // 因为配置表的数据可能会发生变化，每隔一段时间就从配置表中查询一次数据，更新到map，并检查建表
@@ -52,13 +53,13 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                refreshMeta();
+                initTableProcessMap();
             }
         }, 5000, 5000);
 
     }
 
-    private void refreshMeta() {
+    private void initTableProcessMap() {
         //========1.从MySQL数据库配置表中查询配置信息============
         System.out.println("查询配置表信息");
         List<TableProcess> tableProcessList = MySQLUtil.queryList("select * from table_process", TableProcess.class, true);
@@ -152,6 +153,27 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
             }
         }
     }
+    //对Data中数据进行进行过滤
+    private void filterColumn(JSONArray data, String sinkColumns) {
+        for (int i = 0; i < data.size(); i++) {
+            JSONObject data1 = data.getJSONObject(i);
+
+            //sinkColumns 表示要保留那些列     id,out_trade_no,order_id
+        String[] cols = sinkColumns.split(",");
+        //将数组转换为集合，为了判断集合中是否包含某个元素
+        List<String> columnList = Arrays.asList(cols);
+
+        //获取json对象中封装的一个个键值对   每个键值对封装为Entry类型
+        Set<Map.Entry<String, Object>> entrySet = data1.entrySet();
+
+        for (Iterator<Map.Entry<String, Object>> it = entrySet.iterator();it.hasNext();) {
+            Map.Entry<String, Object> entry = it.next();
+            if(!columnList.contains(entry.getKey())){
+                it.remove();
+            }
+        }
+        }
+    }
 
     //每过来一个元素，方法执行一次，主要任务是根据内存中配置表Map对当前进来的元素进行分流处理
     @Override
@@ -160,9 +182,11 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
         String table = jsonObj.getString("table");
         //获取操作类型
         String type = jsonObj.getString("type");
+//        JSONObject.dataJsonObj = jsonObj.getJSONArray("data");
+
         //注意：问题修复  如果使用Maxwell的Bootstrap同步历史数据  ，这个时候它的操作类型叫bootstrap-insert
         if ("bootstrap-insert".equals(type)) {
-            type = "insert";
+            type = "INSERT";
             jsonObj.put("type", type);
         }
 
@@ -176,9 +200,11 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
                 //获取sinkTable，指明当前这条数据应该发往何处  如果是维度数据，那么对应的是phoenix中的表名；如果是事实数据，对应的是kafka的主题名
                 jsonObj.put("sink_table", tableProcess.getSinkTable());
                 String sinkColumns = tableProcess.getSinkColumns();
+                System.out.println(sinkColumns);
                 //如果指定了sinkColumn，需要对保留的字段进行过滤处理
                 if (sinkColumns != null && sinkColumns.length() > 0) {
-                    filterColumn(jsonObj.getJSONObject("data"), sinkColumns);
+                    filterColumn(jsonObj.getJSONArray("data"), sinkColumns);
+                    //System.out.println(filterColumn(jsonObj.getJSONObject("data"), sinkColumns));
                 }
             } else {
                 System.out.println("NO this Key:" + key + " in MySQL");
@@ -195,23 +221,5 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
         }
     }
 
-    //对Data中数据进行进行过滤
-    private void filterColumn(JSONObject data, String sinkColumns) {
-        //sinkColumns 表示要保留那些列     id,out_trade_no,order_id
-        String[] cols = sinkColumns.split(",");
-        //将数组转换为集合，为了判断集合中是否包含某个元素
-        List<String> columnList = Arrays.asList(cols);
 
-        //获取json对象中封装的一个个键值对   每个键值对封装为Entry类型
-        Set<Map.Entry<String, Object>> entrySet = data.entrySet();
-
-        Iterator<Map.Entry<String, Object>> it = entrySet.iterator();
-
-        for (;it.hasNext();) {
-            Map.Entry<String, Object> entry = it.next();
-            if(!columnList.contains(entry.getKey())){
-                it.remove();
-            }
-        }
-    }
 }

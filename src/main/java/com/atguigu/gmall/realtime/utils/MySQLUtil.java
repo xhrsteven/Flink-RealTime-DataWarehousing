@@ -12,7 +12,7 @@ import java.util.List;
 
 public class MySQLUtil {
     //ORM 查询，对象关系映射 OBJECT RELATION MAPPING
-    public static <T> List<T> queryList(String sql, Class<T> clz, boolean underScoreToCamel) {
+    public static <T> List<T> queryList(String sql, Class<T> clz, Boolean underScoreToCamel) {
         //注册驱动
         Connection conn = null;
         PreparedStatement ps = null;
@@ -32,7 +32,7 @@ public class MySQLUtil {
 
             //查询元数据信息
             ResultSetMetaData metaData = rs.getMetaData();
-
+            //声明集合对象，用于封装返回结果
             List<T> resultList = new ArrayList<T>();
             //判断结果集是否存在数据，如果有，进行一次循环
             while(rs.next()){
