@@ -86,7 +86,7 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
             tableProcessMap.put(key, tableProcess);
 
             //========3.如果当前配置项是维度配置，需要向Hbase表中保存数据，那么我们需要判断phoenix中是否存在这张表=====================
-            if (TableProcess.SINK_TYPE_HBASE.equals(sinkType) && "insert".equals(operateType)) {
+            if (TableProcess.SINK_TYPE_HBASE.equals(sinkType) && "INSERT".equals(operateType)) {
                 boolean notExist = existsTables.add(sourceTable);
                 //如果在内存Set集合中不存在这个表，那么在Phoenix中创建这种表
                 if (notExist) {
@@ -153,26 +153,7 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
             }
         }
     }
-    //对Data中数据进行进行过滤
-//    private void filterColumn(JSONArray data, String sinkColumns) {
-//        for (int i = 0; i < data.size(); i++) {
-//            JSONObject data1 = data.getJSONObject(i);
-//            //sinkColumns 表示要保留那些列     id,out_trade_no,order_id
-//        String[] cols = sinkColumns.split(",");
-//        //将数组转换为集合，为了判断集合中是否包含某个元素
-//        List<String> columnList = Arrays.asList(cols);
-//
-//        //获取json对象中封装的一个个键值对   每个键值对封装为Entry类型
-//        Set<Map.Entry<String, Object>> entrySet = data1.entrySet();
-//
-//        for (Iterator<Map.Entry<String, Object>> it = entrySet.iterator();it.hasNext();) {
-//            Map.Entry<String, Object> entry = it.next();
-//            if(!columnList.contains(entry.getKey())){
-//                it.remove();
-//            }
-//        }
-//        }
-//    }
+
 
     //每过来一个元素，方法执行一次，主要任务是根据内存中配置表Map对当前进来的元素进行分流处理
     @Override
@@ -218,4 +199,4 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
             }
         }
     }
-        }
+}

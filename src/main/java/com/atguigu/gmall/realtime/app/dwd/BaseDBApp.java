@@ -49,7 +49,7 @@ public class BaseDBApp {
 
         DataStreamSource<String> jsonStrDS = env.addSource(kafkasource);
 
-        jsonStrDS.print("kafkajsonaa>>>>>>>>");
+//        jsonStrDS.print("kafkajson>>>>>>>>");
 
         //对DS中数据进行结构转换 String -> Json
 
@@ -63,7 +63,7 @@ public class BaseDBApp {
             }
         });
 
-       jsonObjDS.print("json>>>>>");
+//       jsonObjDS.print("json>>>>>");
 //        jsonDS.map(JSON::parseObject);
 
         //3.对数据进行ETL清洗 如果data为空，或者长度不满足，将数据过滤
@@ -72,12 +72,11 @@ public class BaseDBApp {
                     boolean flag = jsonObj.getString("table") != null
                             && jsonObj.getJSONArray("data") != null
                             && jsonObj.getString("data").length() >= 3;
-                 System.out.println("didi>>>>>>>>>>"+jsonObj.toString());
                     return flag;
                 }
         );
 
-      filterDS.print("filterJsonaa>>>");
+//      filterDS.print("filterJson>>>");
 
         //动态分流 事实表放主流输出kafka dwd层 维度表 通过侧输出流 写入Hbase
 //        5.1定义输出到Hbase测输出流标签
@@ -91,7 +90,7 @@ public class BaseDBApp {
         //5.3 获取侧输出流 写到Hbase 获取侧输出流，即将通过 Phoenix 写到 Hbase 的数据
         DataStream<JSONObject> hbaseDS = kafkaDS.getSideOutput(hbaseTag);
 
-       kafkaDS.print("kafka >>>>>");
+//         kafkaDS.print("kafka >>>>>");
 //        hbaseDS.print("hbase >>>>");
 
         //6.将维度数据保存到Phoenix对应的维度表中
@@ -99,27 +98,27 @@ public class BaseDBApp {
         hbaseDS.addSink(new DimSink());
 //
         //7.将事实数据写回到kafka的dwd层
-        FlinkKafkaProducer<JSONObject> kafkaSink = MyKafkaUtil.getKafkaSinkBySchema(
-                new KafkaSerializationSchema<JSONObject>() {
-                    @Override
-                    public void open(SerializationSchema.InitializationContext context) throws Exception {
-                        System.out.println("启动 Kafka Sink");
-                    }
-                    //从每条数据得到该条数据应送往的主题名
-                    @Override
-                    public ProducerRecord<byte[], byte[]> serialize(JSONObject jsonObj, @Nullable Long aLong) {
-                        String sinkTopic = jsonObj.getString("sink_table");
-
-                        JSONArray jsonArr = jsonObj.getJSONArray("data");
-
-                        return new ProducerRecord(sinkTopic, jsonArr.toString().getBytes());
-
-
-                    }
-                }
-        );
-        kafkaDS.print("kafka ::::");
-        kafkaDS.addSink(kafkaSink);
+//        FlinkKafkaProducer<JSONObject> kafkaSink = MyKafkaUtil.getKafkaSinkBySchema(
+//                new KafkaSerializationSchema<JSONObject>() {
+//                    @Override
+//                    public void open(SerializationSchema.InitializationContext context) throws Exception {
+//                        System.out.println("启动 Kafka Sink");
+//                    }
+//                    //从每条数据得到该条数据应送往的主题名
+//                    @Override
+//                    public ProducerRecord<byte[], byte[]> serialize(JSONObject jsonObj, @Nullable Long aLong) {
+//                        String sinkTopic = jsonObj.getString("sink_table");
+//
+//                        JSONArray jsonArr = jsonObj.getJSONArray("data");
+//
+//                        return new ProducerRecord(sinkTopic, jsonArr.toString().getBytes());
+//
+//
+//                    }
+//                }
+//        );
+//        kafkaDS.print("kafka ::::");
+//        kafkaDS.addSink(kafkaSink);
 
         env.execute();
     }

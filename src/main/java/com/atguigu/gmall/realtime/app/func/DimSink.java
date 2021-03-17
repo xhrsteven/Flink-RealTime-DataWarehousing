@@ -5,6 +5,7 @@ package com.atguigu.gmall.realtime.app.func;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.atguigu.gmall.realtime.common.GmallConfig;
+import com.atguigu.gmall.realtime.utils.DimUtil;
 import net.minidev.json.writer.ArraysMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.configuration.Configuration;
@@ -40,7 +41,7 @@ public class DimSink extends RichSinkFunction<JSONObject> {
             if (dataJsonObj != null && dataJsonObj.size()>0) {
                 //根据data中属性和属性值 生产upsert语句
                 String upsertSql = genUpsertSql(tableName.toUpperCase(),dataJsonObj);
-                System.out.println("向Phoenix插入数据的SQL" + upsertSql);
+                System.out.println("向Phoenix插入数据的SQL： " + upsertSql);
 
                 PreparedStatement ps = null;
                 //执行SQL
@@ -57,6 +58,10 @@ public class DimSink extends RichSinkFunction<JSONObject> {
                     if(ps != null){
                         ps.close();
                     }
+                }
+                //如果当前做的是更新操作，需要将redis中的缓存数据清除
+                if (jsonObj.getString("type").equals("UPDATE")) {
+                    DimUtil.deleteCached(tableName,dataJsonObj.getString("id"));
                 }
             }
         }

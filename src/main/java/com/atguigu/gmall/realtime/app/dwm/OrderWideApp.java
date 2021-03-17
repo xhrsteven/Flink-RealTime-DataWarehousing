@@ -103,44 +103,44 @@ public class OrderWideApp {
 
         //指定事件时间字段--假设有序时间
         //4.1订单
-//        SingleOutputStreamOperator<OrderInfo> orderInfoWithTsDS =
-//                OrderInfoDS.assignTimestampsAndWatermarks(new AscendingTimestampExtractor<OrderInfo>() {
-//                    @Override
-//                    public long extractAscendingTimestamp(OrderInfo orderInfo) {
-//                        return orderInfo.getCreate_ts();
-//                    }
-//                });
+        SingleOutputStreamOperator<OrderInfo> orderInfoWithTsDS =
+                OrderInfoDS.assignTimestampsAndWatermarks(new AscendingTimestampExtractor<OrderInfo>() {
+                    @Override
+                    public long extractAscendingTimestamp(OrderInfo orderInfo) {
+                        return orderInfo.getCreate_ts();
+                    }
+                });
 
-        SingleOutputStreamOperator<OrderInfo> orderInfoWithTsDS = OrderInfoDS.assignTimestampsAndWatermarks(
-                WatermarkStrategy.<OrderInfo>forBoundedOutOfOrderness(Duration.ofSeconds(3))
-                        .withTimestampAssigner(new SerializableTimestampAssigner<OrderInfo>() {
-                            @Override
-                            public long extractTimestamp(OrderInfo orderInfo, long recordTimestamp) {
-                                return orderInfo.getCreate_ts();
-                            }
-                        })
-        );
+//        SingleOutputStreamOperator<OrderInfo> orderInfoWithTsDS = OrderInfoDS.assignTimestampsAndWatermarks(
+//                WatermarkStrategy.<OrderInfo>forBoundedOutOfOrderness(Duration.ofSeconds(3))
+//                        .withTimestampAssigner(new SerializableTimestampAssigner<OrderInfo>() {
+//                            @Override
+//                            public long extractTimestamp(OrderInfo orderInfo, long recordTimestamp) {
+//                                return orderInfo.getCreate_ts();
+//                            }
+//                        })
+//        );
         
 //        4.2订单明细
 
-//        SingleOutputStreamOperator<OrderDetail> orderDetailWithTsDS = OrderDetailDS.assignTimestampsAndWatermarks(new AscendingTimestampExtractor<OrderDetail>() {
-//            @Override
-//            public long extractAscendingTimestamp(OrderDetail orderDetail) {
-//                return orderDetail.getCreate_ts();
-//            }
-//        });
+        SingleOutputStreamOperator<OrderDetail> orderDetailWithTsDS = OrderDetailDS.assignTimestampsAndWatermarks(new AscendingTimestampExtractor<OrderDetail>() {
+            @Override
+            public long extractAscendingTimestamp(OrderDetail orderDetail) {
+                return orderDetail.getCreate_ts();
+            }
+        });
 
-        SingleOutputStreamOperator<OrderDetail> orderDetailWithTsDS = OrderDetailDS.assignTimestampsAndWatermarks(
-
-                WatermarkStrategy.
-                        <OrderDetail>forBoundedOutOfOrderness(Duration.ofSeconds(3))
-                        .withTimestampAssigner(new SerializableTimestampAssigner<OrderDetail>() {
-                            @Override
-                            public long extractTimestamp(OrderDetail orderDetail, long recordTimestamp) {
-                                return orderDetail.getCreate_ts();
-                            }
-                        })
-        );
+//        SingleOutputStreamOperator<OrderDetail> orderDetailWithTsDS = OrderDetailDS.assignTimestampsAndWatermarks(
+//
+//                WatermarkStrategy.
+//                        <OrderDetail>forBoundedOutOfOrderness(Duration.ofSeconds(3))
+//                        .withTimestampAssigner(new SerializableTimestampAssigner<OrderDetail>() {
+//                            @Override
+//                            public long extractTimestamp(OrderDetail orderDetail, long recordTimestamp) {
+//                                return orderDetail.getCreate_ts();
+//                            }
+//                        })
+//        );
 
 
         //5.按照订单id 进行分组，指定关联key

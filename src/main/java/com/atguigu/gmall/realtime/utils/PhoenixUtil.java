@@ -18,44 +18,45 @@ public class PhoenixUtil {
         try {
             //注册驱动
             Class.forName("org.apache.phoenix.jdbc.PhoenixDriver");
-            //获取链接
+            //获取Phoenix的连接
             conn = DriverManager.getConnection(GmallConfig.PHOENIX_SERVER);
             //指定操作的表空间
             conn.setSchema(GmallConfig.HBASE_SCHEMA);
-        } catch (ClassNotFoundException | SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    //从Phoenix中查询
-    public static <T> List<T> queryList(String sql, Class<T> clazz){
+
+    // 从Phoenix中查询数据
+    // select * from 表 where XXX=xxx
+    public static <T> List<T> queryList(String sql,Class<T> clazz){
         if(conn == null){
             init();
         }
         List<T> resultList = new ArrayList<>();
         PreparedStatement ps = null;
-        ResultSet rs =null;
-
+        ResultSet rs = null;
         try {
             //获取数据库操作对象
             ps = conn.prepareStatement(sql);
-            //执行sql
+            //执行SQL语句
             rs = ps.executeQuery();
-            //通过结果集获取元数据信息
+            //通过结果集对象获取元数据信息
             ResultSetMetaData metaData = rs.getMetaData();
-
             //处理结果集
             while (rs.next()){
                 //声明一个对象，用于封装查询的一条结果集
                 T rowData = clazz.newInstance();
-                for (int i = 1; i <= metaData.getColumnCount(); i++){
+                for (int i = 1; i <= metaData.getColumnCount(); i++) {
                     BeanUtils.setProperty(rowData,metaData.getColumnName(i),rs.getObject(i));
                 }
                 resultList.add(rowData);
             }
+
         } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("从维度表查询失败");
-        }finally{
+            throw new RuntimeException("从维度表中查询数据失败");
+        } finally {
             //释放资源
             if (rs != null) {
                 try {
@@ -71,21 +72,14 @@ public class PhoenixUtil {
                     e.printStackTrace();
                 }
             }
-            if (conn != null) {
-                try {
-                    conn.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
         }
-
 
         return resultList;
     }
 
-    public static void main(String[] args) {
-        queryList("select * from DIM_BASE_TRADEMARK", JSONObject.class);
-    }
+//    public static void main(String[] args) {
+//        List<JSONObject> objectList = queryList("select * from BASE_TRADEMARK ", JSONObject.class);
+//        System.out.println(objectList);
+//    }
 
 }
