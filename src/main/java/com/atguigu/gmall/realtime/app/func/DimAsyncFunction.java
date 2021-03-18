@@ -9,27 +9,25 @@ import org.apache.flink.streaming.api.functions.async.RichAsyncFunction;
 
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
+
 
 /*
 维度自定义异步查询
 模板方法设计模式：
-在父类中只定义
+在父类中只定义方法声明让整个流程跑通
+具体实现延迟到子类中
  */
-public abstract class DimAsyncFunction<T> extends RichAsyncFunction<T,T> implements DimJoinFunction<T>{
+public abstract class DimAsyncFunction<T> extends RichAsyncFunction<T,T> implements DimJoinFunction<T> {
     //多态
     private ExecutorService executorService ;
 
-    private String tableName;
+    public String tableName;
 
     public DimAsyncFunction(String tableName){
         this.tableName = tableName;
     }
 
     //需要提供一个获取key的方法
-    public abstract String getKey(T obj);
-
-    public abstract void join(T obj, JSONObject dimInfoJsonObj);
 
 
     @Override
@@ -37,8 +35,6 @@ public abstract class DimAsyncFunction<T> extends RichAsyncFunction<T,T> impleme
         //初始化线程池对象
         System.out.println("初始化线程池对象");
         executorService = ThreadPoolUtil.getInstance();
-
-
     }
 
     /*
@@ -54,7 +50,7 @@ public abstract class DimAsyncFunction<T> extends RichAsyncFunction<T,T> impleme
                     public void run() {
                         //异步请求
                         try {
-                            long start = System.currentTimeMillis();
+                            Long start = System.currentTimeMillis();
                             //从流中事实数据获取
                             String key = getKey(obj);
                             //根据维度id 到维度表中进行查询
@@ -66,13 +62,15 @@ public abstract class DimAsyncFunction<T> extends RichAsyncFunction<T,T> impleme
                                 join(obj, dimInfoJsonObj);
                             }
                             System.out.println("维度关联后的对象：" + obj);
-                            long end = System.currentTimeMillis();
+
+                            Long end = System.currentTimeMillis();
                             System.out.println("异步维度查询耗时：" + (end - start) + "毫秒");
+
                             //将关联后的数据向下传递
                             resultFuture.complete(Arrays.asList(obj));
                         }catch (Exception e){
                             e.printStackTrace();
-                            throw new RuntimeException("维度异步查询失败");
+                            throw new RuntimeException(tableName + "维度异步查询失败");
                         }
                     }
                 }

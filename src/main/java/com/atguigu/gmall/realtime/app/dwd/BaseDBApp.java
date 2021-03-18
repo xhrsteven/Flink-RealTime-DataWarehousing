@@ -30,7 +30,7 @@ public class BaseDBApp {
         //1.创建流处理执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         //1.2设置并行度--kafka
-        env.setParallelism(1);
+        env.setParallelism(6);
 
         //ck 精准一次性
         env.enableCheckpointing(5000, CheckpointingMode.EXACTLY_ONCE);
@@ -94,7 +94,7 @@ public class BaseDBApp {
 //        hbaseDS.print("hbase >>>>");
 
         //6.将维度数据保存到Phoenix对应的维度表中
-        hbaseDS.print("hbase :::::");
+//        hbaseDS.print("hbase :::::");
         hbaseDS.addSink(new DimSink());
 //
         //7.将事实数据写回到kafka的dwd层
@@ -116,7 +116,7 @@ public class BaseDBApp {
                     }
                 }
         );
-        kafkaDS.print("kafka ::::");
+//        kafkaDS.print("kafka ::::");
         kafkaDS.addSink(kafkaSink);
 
         env.execute();

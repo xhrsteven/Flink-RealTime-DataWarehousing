@@ -122,7 +122,7 @@ public class DimUtil {
 //        System.out.println(key);
     }
 //    public static void main(String[] args) {
-//        JSONObject dimInfo = DimUtil.getDimInfo("BASE_TRADEMARK", "13");
+//        JSONObject dimInfo = DimUtil.getDimInfo("DIM_USER_INFO", "1");
 //
 //        System.out.println(dimInfo);
 //    }

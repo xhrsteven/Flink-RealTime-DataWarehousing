@@ -23,7 +23,7 @@ public class ThreadPoolUtil {
             synchronized (ThreadPoolUtil.class){
                 if (pool == null) { //双重校验
                     pool = new ThreadPoolExecutor(
-                            4,20,300, TimeUnit.SECONDS, new LinkedBlockingDeque<Runnable>(Integer.MAX_VALUE)
+                            8,10000,300, TimeUnit.SECONDS, new LinkedBlockingDeque<Runnable>(Integer.MAX_VALUE)
                     );
                 }
             }

@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.atguigu.gmall.realtime.app.func.DimAsyncFunction;
+import com.atguigu.gmall.realtime.app.func.DimSink;
 import com.atguigu.gmall.realtime.bean.OrderDetail;
 import com.atguigu.gmall.realtime.bean.OrderInfo;
 import com.atguigu.gmall.realtime.bean.OrderWide;
@@ -52,7 +53,7 @@ public class OrderWideApp {
          */
         String orderInfoSourceTopic = "dwd_order_info";
         String orderDetailSourceTopic = "dwd_order_detail";
-        String groupId = "order_wide_group5";
+        String groupId = "order_wide_group7";
         String orderWideSinkTopic = "dwm_order_wide";
 
         //2.1 读取订单数据
@@ -181,7 +182,7 @@ public class OrderWideApp {
         SingleOutputStreamOperator<OrderDetail> orderDetailWithTsDS = OrderDetailDS.assignTimestampsAndWatermarks(
 
                 WatermarkStrategy.
-                        <OrderDetail>forBoundedOutOfOrderness(Duration.ofSeconds(3))
+                        <OrderDetail>forBoundedOutOfOrderness(Duration.ofSeconds(10)) //
                         .withTimestampAssigner(new SerializableTimestampAssigner<OrderDetail>() {
                             @Override
                             public long extractTimestamp(OrderDetail orderDetail, long recordTimestamp) {
@@ -198,7 +199,7 @@ public class OrderWideApp {
 //        //6. 使用interval Join 进行关联
         SingleOutputStreamOperator<OrderWide> orderWideDS = orderInfoKeyedDS
                 .intervalJoin(orderDetailKeyedDS)
-                .between(Time.milliseconds(-5), Time.milliseconds(5))
+                .between(Time.milliseconds(-3600), Time.milliseconds(10))
                 .process(
                         new ProcessJoinFunction<OrderInfo, OrderDetail, OrderWide>() {
                             @Override
@@ -208,46 +209,78 @@ public class OrderWideApp {
                         }
                 );
 //
-        orderWideDS.print("orderWide>>>>>>>");
+//        orderWideDS.print("orderWide>>>>>>>");
 
-//关联用户维度
-//        AsyncDataStream.unorderedWait(
-//                orderWideDS,
-//                new DimAsyncFunction<orderWide>("DIM_USER_INFO"){
-//
-//                    @Override
-//            public String getKey(orderWide orderWide) {
-//                return orderWide.getUser_id().toString();
-//            }
-//
-//            @Override
-//            public void join(orderWide orderWide, JSONObject dimInfoJsonObj) throws Exception{
-//                String birthday =dimInfoJsonObj.getString("BIRTHDAY");
-//
-//                //定义日期转换工具
-//                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-//
-//                Date birthdayDate = sdf.parse(birthday);
-//
-//                //获取当前时间毫秒数据
-//                Long curTs = System.currentTimeMillis();
-//
-//                Long birthdayTs = birthday.getTime();
-//
-//                Long ageTs= curTs - birthdayTs;
-//                //转换为年龄
-//                Long ageLong = ageTs /1000L /60L / 60L / 24L / 365L;
-//                int age = ageLong.intValue();
-//
-//                //将维度中年龄赋值给订单宽表中的属性
-//                orderWide.setUser_age(age);
-//
-//                orderWide.setUser_gender(dimInfoJsonObj.getString("GENDER"));
-//
-//            }
-//
-//        },60, TimeUnit.SECONDS,100);
+//关联用户维度 -- 无序等待
 
+        SingleOutputStreamOperator<OrderWide> orderWideWithUserDstream =
+                AsyncDataStream.unorderedWait(orderWideDS, new DimAsyncFunction<OrderWide>("DIM_USER_INFO") {
+
+            @Override
+            public String getKey(OrderWide obj) {
+                return String.valueOf(obj.getUser_id());
+            }
+
+            @Override
+            public void join(OrderWide orderWide, JSONObject dimInfoJsonObj) throws Exception {
+                String birthday = dimInfoJsonObj.getString("BIRTHDAY");
+                //定义日期转换工具
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+                Date birthdayDate = sdf.parse(birthday);
+                Long curTs = System.currentTimeMillis();
+                Long betweenMs = curTs - birthdayDate.getTime();
+                Long ageLong = betweenMs / 1000L / 60L / 60L / 24L / 365L;
+                Integer age = ageLong.intValue();
+                orderWide.setUser_age(age);
+                orderWide.setUser_gender(dimInfoJsonObj.getString("GENDER"));
+            }
+        }, 10000, TimeUnit.SECONDS, 1000);
+
+//        orderWideWithUserDstream.print(">>>>>");
+
+        SingleOutputStreamOperator<OrderWide> orderWideWithProvinceDS = AsyncDataStream.unorderedWait(
+                orderWideWithUserDstream,
+                new DimAsyncFunction<OrderWide>("DIM_BASE_PROVINCE") {
+
+                    @Override
+                    public String getKey(OrderWide orderWide) {
+                        return orderWide.getProvince_id().toString();
+                    }
+
+                    @Override
+                    public void join(OrderWide orderWide, JSONObject dimInfoJsonObj) throws Exception {
+                        orderWide.setProvince_name(dimInfoJsonObj.getString("NAME"));
+                        orderWide.setProvince_area_code(dimInfoJsonObj.getString("AREA_CODE"));
+                        orderWide.setProvince_iso_code(dimInfoJsonObj.getString("ISO_CODE"));
+                        orderWide.setProvince_3166_2_code(dimInfoJsonObj.getString("ISO_3166_2"));
+                    }
+                },1000,TimeUnit.SECONDS
+        );
+
+//        orderWideWithProvinceDS.print("province>>>>>");
+// 关联sku维度
+
+        SingleOutputStreamOperator<OrderWide> orderWideWithSkuDS = AsyncDataStream.unorderedWait(
+                orderWideWithProvinceDS,
+                new DimAsyncFunction<OrderWide>("DIM_SKU_INFO") {
+
+                    @Override
+                    public String getKey(OrderWide orderWide) {
+                        return orderWide.getSku_id().toString();
+                    }
+
+                    @Override
+                    public void join(OrderWide orderWide, JSONObject dimInfoJsonObj) throws Exception {
+                        orderWide.setSku_name(dimInfoJsonObj.getString("SKU_NAME"));
+                        orderWide.setCategory3_id(dimInfoJsonObj.getLong("CATEGORY3_ID"));
+                        orderWide.setSpu_id(dimInfoJsonObj.getLong("SPU_ID"));
+                        orderWide.setTm_id(dimInfoJsonObj.getLong("TM_ID"));
+                    }
+                }, 1000, TimeUnit.SECONDS
+        );
+
+        orderWideWithSkuDS.print("sku>>>>>");
 
         env.execute();
     }

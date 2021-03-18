@@ -7,6 +7,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.atguigu.gmall.realtime.bean.TableProcess;
 import com.atguigu.gmall.realtime.common.GmallConfig;
 import com.atguigu.gmall.realtime.utils.MySQLUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.util.Collector;
@@ -55,7 +56,7 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
             public void run() {
                 initTableProcessMap();
             }
-        }, 5000, 5000);
+        }, 10000, 10000);
 
     }
 
@@ -133,7 +134,7 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
         createSql.append(")");
         createSql.append(ext);
 
-        System.out.println("创建Phoenix表的语句:" + createSql);
+//        System.out.println("创建Phoenix表的语句:" + createSql);
 
         //获取Phoenix连接
         PreparedStatement ps = null;
@@ -153,6 +154,18 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
             }
         }
     }
+
+//    private void filterColumn(JSONArray data, String sinkColumns) {
+//        String[] cols = StringUtils.split(sinkColumns, ",");
+//        Set<Map.Entry<String, Object>> entries = data.entrySet();
+//        List<String> columnList = Arrays.asList(cols);
+//        for (Iterator<Map.Entry<String, Object>> iterator = entries.iterator(); iterator.hasNext(); ) {
+//            Map.Entry<String, Object> entry = iterator.next();
+//            if (!columnList.contains(entry.getKey())) {
+//                iterator.remove();
+//            }
+//        }
+//    }
 
 
     //每过来一个元素，方法执行一次，主要任务是根据内存中配置表Map对当前进来的元素进行分流处理
@@ -179,24 +192,28 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
             if (tableProcess != null) {
                 //获取sinkTable，指明当前这条数据应该发往何处  如果是维度数据，那么对应的是phoenix中的表名；如果是事实数据，对应的是kafka的主题名
                 jsonObj.put("sink_table", tableProcess.getSinkTable());
+//                if (tableProcess.getSinkColumns() != null && tableProcess.getSinkColumns().length() > 0) {
+//
+//                    filterColumn(jsonObj.getJSONArray("data"), tableProcess.getSinkColumns());
+//                }
                 String sinkColumns = tableProcess.getSinkColumns();
-                System.out.println(sinkColumns);
+//                System.out.println(sinkColumns);
                 //如果指定了sinkColumn，需要对保留的字段进行过滤处理
                 if (sinkColumns != null && sinkColumns.length() > 0) {
                     jsonObj.getJSONArray("data");
                 }
             } else {
-                System.out.println("NO this Key:" + key + " in MySQL");
-            }
+                    System.out.println("NO this Key:" + key + " in MySQL");
+                }
 
-            //根据sinkType，将数据输出到不同的流
-            if(tableProcess != null && tableProcess.getSinkType().equals(TableProcess.SINK_TYPE_HBASE)){
-                //如果sinkType = hbase ，说明是维度数据，通过侧输出流输出
-                ctx.output(outputTag,jsonObj);
-            }else if(tableProcess != null && tableProcess.getSinkType().equals(TableProcess.SINK_TYPE_KAFKA)){
-                //如果sinkType = kafka ，说明是事实数据，通过主流输出
-                out.collect(jsonObj);
+                //根据sinkType，将数据输出到不同的流
+                if (tableProcess != null && tableProcess.getSinkType().equals(TableProcess.SINK_TYPE_HBASE)) {
+                    //如果sinkType = hbase ，说明是维度数据，通过侧输出流输出
+                    ctx.output(outputTag, jsonObj);
+                } else if (tableProcess != null && tableProcess.getSinkType().equals(TableProcess.SINK_TYPE_KAFKA)) {
+                    //如果sinkType = kafka ，说明是事实数据，通过主流输出
+                    out.collect(jsonObj);
+                }
             }
         }
     }
-}
