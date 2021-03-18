@@ -4,7 +4,8 @@ package com.atguigu.gmall.realtime.app.dwm;
  *独立访客UV的计算
  * 模拟生产日志jar -> nginx -> 日志采集服务 -> kafka(ods)
  * -> BaseLogApp(分流) -> Kafka(dwd) dwd_page_log
- * -> UniqueVisitApp(独立访客) -> Kafka(dwm_unique_visit)
+ * -> UniqueVisitApp(独立访客) -> Kafka(dwm_unique_visit)+
+ *
  */
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;

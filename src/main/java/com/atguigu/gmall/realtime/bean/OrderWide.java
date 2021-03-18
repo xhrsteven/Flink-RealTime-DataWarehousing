@@ -3,6 +3,7 @@ package com.atguigu.gmall.realtime.bean;
 import org.apache.commons.lang3.ObjectUtils;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 /**
  * 订单宽表实体类
@@ -28,11 +29,11 @@ public class OrderWide {
     BigDecimal split_coupon_amount;
     BigDecimal split_total_amount;
 
-    String expire_time;
+    Long expire_time;
     String create_time;
-    String operate_time;
-    String create_date; // 把其他字段处理得到
-    String create_hour;
+    Long operate_time;
+    Date create_date; // 把其他字段处理得到
+    Long create_hour;
     String province_name;//查询维表得到
     String province_area_code;
     String province_iso_code;

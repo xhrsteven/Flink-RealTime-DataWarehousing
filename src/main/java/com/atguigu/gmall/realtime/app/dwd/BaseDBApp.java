@@ -98,27 +98,26 @@ public class BaseDBApp {
         hbaseDS.addSink(new DimSink());
 //
         //7.将事实数据写回到kafka的dwd层
-//        FlinkKafkaProducer<JSONObject> kafkaSink = MyKafkaUtil.getKafkaSinkBySchema(
-//                new KafkaSerializationSchema<JSONObject>() {
-//                    @Override
-//                    public void open(SerializationSchema.InitializationContext context) throws Exception {
-//                        System.out.println("启动 Kafka Sink");
-//                    }
-//                    //从每条数据得到该条数据应送往的主题名
-//                    @Override
-//                    public ProducerRecord<byte[], byte[]> serialize(JSONObject jsonObj, @Nullable Long aLong) {
-//                        String sinkTopic = jsonObj.getString("sink_table");
-//
-//                        JSONArray jsonArr = jsonObj.getJSONArray("data");
-//
-//                        return new ProducerRecord(sinkTopic, jsonArr.toString().getBytes());
-//
-//
-//                    }
-//                }
-//        );
-//        kafkaDS.print("kafka ::::");
-//        kafkaDS.addSink(kafkaSink);
+        FlinkKafkaProducer<JSONObject> kafkaSink = MyKafkaUtil.getKafkaSinkBySchema(
+                new KafkaSerializationSchema<JSONObject>() {
+                    @Override
+                    public void open(SerializationSchema.InitializationContext context) throws Exception {
+                        System.out.println("启动 Kafka Sink");
+                    }
+                    //从每条数据得到该条数据应送往的主题名
+                    @Override
+                    public ProducerRecord<byte[], byte[]> serialize(JSONObject jsonObj, @Nullable Long aLong) {
+                        String sinkTopic = jsonObj.getString("sink_table");
+
+                        JSONArray jsonArr = jsonObj.getJSONArray("data");
+
+                        return new ProducerRecord(sinkTopic, jsonArr.toString().getBytes());
+
+                    }
+                }
+        );
+        kafkaDS.print("kafka ::::");
+        kafkaDS.addSink(kafkaSink);
 
         env.execute();
     }
