@@ -21,7 +21,7 @@ public class DateTimeUtil {
     }
 
     public static Long toTs(String YmDHms){
-        System.out.println("YmDHms:" + YmDHms);
+//        System.out.println("YmDHms:" + YmDHms);
         LocalDateTime localDateTime = LocalDateTime.parse(YmDHms, formator);
 
         long ts = localDateTime.toInstant(ZoneOffset.of("+8")).toEpochMilli();

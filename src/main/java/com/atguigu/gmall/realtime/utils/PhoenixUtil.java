@@ -49,6 +49,7 @@ public class PhoenixUtil {
                 T rowData = clazz.newInstance();
                 for (int i = 1; i <= metaData.getColumnCount(); i++) {
                     BeanUtils.setProperty(rowData,metaData.getColumnName(i),rs.getObject(i));
+//                    System.out.println(rowData);
                 }
                 resultList.add(rowData);
             }
@@ -77,9 +78,9 @@ public class PhoenixUtil {
         return resultList;
     }
 
-//    public static void main(String[] args) {
-//        List<JSONObject> objectList = queryList("select * from BASE_TRADEMARK ", JSONObject.class);
-//        System.out.println(objectList);
-//    }
+    public static void main(String[] args) {
+        List<JSONObject> objectList = queryList("select * from DIM_BASE_CATEGORY3 ", JSONObject.class);
+        System.out.println(objectList);
+    }
 
 }

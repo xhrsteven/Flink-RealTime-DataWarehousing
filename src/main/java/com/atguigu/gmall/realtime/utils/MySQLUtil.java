@@ -23,7 +23,7 @@ public class MySQLUtil {
             conn = DriverManager.getConnection(
                     "jdbc:mysql://hadoop01:3306/gmall2021_realtime?characterEncoding=utf-8&useSSL=false",
                     "root",
-                    "123456");
+                    "Vantop01,");
             //创建数据库操作对象
             ps = conn.prepareStatement(sql);
 

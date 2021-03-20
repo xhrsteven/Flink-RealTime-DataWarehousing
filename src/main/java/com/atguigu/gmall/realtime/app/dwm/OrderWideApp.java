@@ -113,7 +113,6 @@ public class OrderWideApp {
                     @Override
                     public List<JSONObject> map(String jsonStr) throws Exception {
                         JSONArray jsonArr = JSON.parseArray(jsonStr);
-
 //                        System.out.println(jsonStr);
                         List<JSONObject> orderDetail= new ArrayList<JSONObject>();
                         for (int i = 0; i < jsonArr.size(); i++) {
@@ -128,12 +127,10 @@ public class OrderWideApp {
         SingleOutputStreamOperator<OrderDetail> OrderDetailDS = OrderDetailDS1.flatMap(
                 new RichFlatMapFunction<List<JSONObject>, OrderDetail>() {
                     SimpleDateFormat sdf = null;
-
                     @Override
                     public void open(Configuration parameters) throws Exception {
                         sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     }
-
                     @Override
                     public void flatMap(List<JSONObject> jsonObjects, Collector<OrderDetail> collector) throws Exception {
                         Iterator<JSONObject> iter = jsonObjects.iterator();
@@ -258,7 +255,7 @@ public class OrderWideApp {
                 },1000,TimeUnit.SECONDS
         );
 
-     orderWideWithProvinceDS.print("province>>>>>");
+//     orderWideWithProvinceDS.print("province>>>>>");
 // 关联sku维度
 
         SingleOutputStreamOperator<OrderWide> orderWideWithSkuDS = AsyncDataStream.unorderedWait(
@@ -280,7 +277,7 @@ public class OrderWideApp {
                 }, 1000, TimeUnit.SECONDS
         );
 
-      orderWideWithSkuDS.print("sku>>>>>");
+//      orderWideWithSkuDS.print("sku>>>>>");
 
 //关联SPU商品维度
         SingleOutputStreamOperator<OrderWide> orderWideWithSpuDS = AsyncDataStream.unorderedWait(
@@ -298,7 +295,7 @@ public class OrderWideApp {
                 }, 1000, TimeUnit.SECONDS
         );
 
-        orderWideWithSpuDS.print("spu>>>>>>>>>>");
+//        orderWideWithSpuDS.print("spu>>>>>>>>>>");
 
         //关联品类维度
         SingleOutputStreamOperator<OrderWide> orderWideWithCategoryDS = AsyncDataStream.unorderedWait(
@@ -316,7 +313,7 @@ public class OrderWideApp {
                 }, 1000, TimeUnit.SECONDS
         );
 
-        orderWideWithCategoryDS.print("category>>>>>>>>>>>>");
+//        orderWideWithCategoryDS.print("category>>>>>>>>>>>>");
         //关联品牌维度
         SingleOutputStreamOperator<OrderWide> orderWideWithTmDS = AsyncDataStream.unorderedWait(
                 orderWideWithCategoryDS, new DimAsyncFunction<OrderWide>("DIM_BASE_TRADEMARK") {
@@ -333,7 +330,7 @@ public class OrderWideApp {
                 }, 1000, TimeUnit.SECONDS
         );
 
-        orderWideWithTmDS.print("tm>>>>>>>>>>");
+//        orderWideWithTmDS.print("tm>>>>>>>>>>");
 
         orderWideWithTmDS.map(orderWide -> JSON.toJSONString(orderWide))
                 .addSink(MyKafkaUtil.getKafkaSink(orderWideSinkTopic));

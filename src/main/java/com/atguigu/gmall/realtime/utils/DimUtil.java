@@ -31,7 +31,7 @@ public class DimUtil {
         }
 
         String sql = "select * from " + tableName + whereSql;
-        System.out.println("查询维度的SQL:" + sql);
+//        System.out.println("查询维度的SQL:" + sql);
         List<JSONObject> dimList = PhoenixUtil.queryList(sql, JSONObject.class);
         JSONObject dimJsonObj = null;
         //对于维度查询来讲，一般都是根据主键进行查询，不可能返回多条记录，只会有一条
@@ -84,7 +84,7 @@ public class DimUtil {
         } else {
             //如果在Redis中没有查到数据，需要到Phoenix中查询
             String sql = "select * from " + tableName + whereSql;
-            System.out.println("查询维度的SQL:" + sql);
+//            System.out.println("查询维度的SQL:" + sql);
             List<JSONObject> dimList = PhoenixUtil.queryList(sql, JSONObject.class);
             //对于维度查询来讲，一般都是根据主键进行查询，不可能返回多条记录，只会有一条
             if (dimList != null && dimList.size() > 0) {
