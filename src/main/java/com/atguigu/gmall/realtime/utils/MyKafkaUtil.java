@@ -22,6 +22,8 @@ public class MyKafkaUtil {
         props.setProperty(ConsumerConfig.GROUP_ID_CONFIG,groupId);
         props.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,KafkaServer);
         props.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,"earliest");
+        props.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringDeserializer");
+        props.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringDeserializer");
         return new FlinkKafkaConsumer<String>(topic,new SimpleStringSchema(),props);
     }
 

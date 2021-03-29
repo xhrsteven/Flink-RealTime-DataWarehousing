@@ -9,6 +9,7 @@ import java.util.List;
 
 public class demo {
     public static void main(String[] args) {
+
         UserInfo userInfo1 = new UserInfo();
         userInfo1.setUser_id(1L);
         userInfo1.setId(2L);

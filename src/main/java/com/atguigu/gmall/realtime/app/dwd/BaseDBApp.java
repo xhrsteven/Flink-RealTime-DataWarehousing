@@ -30,26 +30,26 @@ public class BaseDBApp {
         //1.创建流处理执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         //1.2设置并行度--kafka
-        env.setParallelism(6);
+        env.setParallelism(20);
 
         //ck 精准一次性
-        env.enableCheckpointing(5000, CheckpointingMode.EXACTLY_ONCE);
-        env.getCheckpointConfig().setCheckpointTimeout(60000);
-        env.setStateBackend(new FsStateBackend("hdfs://hadoop01:8020/flink/checkpoint/baselogApp"));
+//        env.enableCheckpointing(5000, CheckpointingMode.EXACTLY_ONCE);
+//        env.getCheckpointConfig().setCheckpointTimeout(60000);
+//        env.setStateBackend(new FsStateBackend("hdfs://hadoop01:8020/flink/checkpoint/baselogApp"));
 
         //重启策略 --会尝试重启
 //        env.setRestartStrategy(RestartStrategies.noRestart());
 
         //从Kafka的ODS层读取数据
-        String topic ="ods_base_db_m";
-        String groupId = "ods_base_group2";
+        String topic ="gmall";
+        String groupId = "ods_base_group1";
 
         //2.1通过工具类获取Kafka消费者
         FlinkKafkaConsumer<String> kafkasource = MyKafkaUtil.getKafkasource(topic, groupId);
 
         DataStreamSource<String> jsonStrDS = env.addSource(kafkasource);
 
-//        jsonStrDS.print("kafkajson>>>>>>>>");
+//       jsonStrDS.print("kafkajson>>>>>>>>");
 
         //对DS中数据进行结构转换 String -> Json
 
@@ -63,14 +63,14 @@ public class BaseDBApp {
             }
         });
 
-//       jsonObjDS.print("json>>>>>");
+//      jsonObjDS.print("json>>>>>");
 //        jsonDS.map(JSON::parseObject);
 
         //3.对数据进行ETL清洗 如果data为空，或者长度不满足，将数据过滤
         SingleOutputStreamOperator<JSONObject> filterDS = jsonObjDS.filter(
                 jsonObj -> {
                     boolean flag = jsonObj.getString("table") != null
-                            && jsonObj.getJSONArray("data") != null
+                            && jsonObj.getJSONObject("data") != null
                             && jsonObj.getString("data").length() >= 3;
                     return flag;
                 }
@@ -94,7 +94,7 @@ public class BaseDBApp {
 //        hbaseDS.print("hbase >>>>");
 
         //6.将维度数据保存到Phoenix对应的维度表中
-//        hbaseDS.print("hbase :::::");
+       hbaseDS.print("hbase :::::");
         hbaseDS.addSink(new DimSink());
 //
         //7.将事实数据写回到kafka的dwd层
@@ -109,14 +109,14 @@ public class BaseDBApp {
                     public ProducerRecord<byte[], byte[]> serialize(JSONObject jsonObj, @Nullable Long aLong) {
                         String sinkTopic = jsonObj.getString("sink_table");
 
-                        JSONArray jsonArr = jsonObj.getJSONArray("data");
-
-                        return new ProducerRecord(sinkTopic, jsonArr.toString().getBytes());
+//                        JSONArray jsonArr = jsonObj.getJSONArray("data"); // jsonArray 需要转换
+                        JSONObject dataJsonObj = jsonObj.getJSONObject("data");
+                        return new ProducerRecord(sinkTopic, dataJsonObj.toString().getBytes());
 
                     }
                 }
         );
-//        kafkaDS.print("kafka ::::");
+     kafkaDS.print("kafka ::::");
         kafkaDS.addSink(kafkaSink);
 
         env.execute();

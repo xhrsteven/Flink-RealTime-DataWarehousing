@@ -1,5 +1,6 @@
 package com.atguigu.gmall.realtime.bean;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.commons.lang3.ObjectUtils;
 
@@ -10,6 +11,7 @@ import java.util.Date;
  * 订单宽表实体类
  */
 @Data
+@AllArgsConstructor
 public class OrderWide {
     Long detail_id;
     Long order_id ;

@@ -49,7 +49,7 @@ public class PaymentWideApp {
         String orderWideSourceTopic = "dwm_order_wide";
         String paymentWideSinkTopic = "dwm_payment_wide";
 
-        String groupId = "paymentWide1";
+        String groupId = "paymentWide";
 
         FlinkKafkaConsumer<String> kafkaPaymentInfo = MyKafkaUtil.getKafkasource(paymentInfoSourceTopic, groupId);
         DataStreamSource<String> PaymentInfoDS = env.addSource(kafkaPaymentInfo);
@@ -57,112 +57,119 @@ public class PaymentWideApp {
         FlinkKafkaConsumer<String> OrderWideSource = MyKafkaUtil.getKafkasource(orderWideSourceTopic, groupId);
         DataStreamSource<String> OrderWideDS = env.addSource(OrderWideSource);
 
-        OrderWideDS.print(">>>");
+//        OrderWideDS.print(">>>");
         //对读取到的数据进行结构转换 json->POJO
         //转换支付流
-        SingleOutputStreamOperator<List<JSONObject>> paymentInfoDS1 = PaymentInfoDS.map(
-                new RichMapFunction<String, List<JSONObject>>() {
-                    @Override
-                    public List<JSONObject> map(String jsonStr) throws Exception {
-                        JSONArray jsonArr = JSON.parseArray(jsonStr);
-                        List<JSONObject> paymentInfo = new ArrayList<JSONObject>();
-                        for (int i = 0; i < jsonArr.size(); i++) {
-                            JSONObject jsonObj = jsonArr.getJSONObject(i);
-                            paymentInfo.add(jsonObj);
-                        }
-                        return paymentInfo;
-                    }
-                }
-        );
+//        SingleOutputStreamOperator<List<JSONObject>> paymentInfoDS1 = PaymentInfoDS.map(
+//                new RichMapFunction<String, List<JSONObject>>() {
+//                    @Override
+//                    public List<JSONObject> map(String jsonStr) throws Exception {
+//                        JSONArray jsonArr = JSON.parseArray(jsonStr);
+//                        List<JSONObject> paymentInfo = new ArrayList<JSONObject>();
+//                        for (int i = 0; i < jsonArr.size(); i++) {
+//                            JSONObject jsonObj = jsonArr.getJSONObject(i);
+//                            paymentInfo.add(jsonObj);
+//                        }
+//                        return paymentInfo;
+//                    }
+//                }
+//        );
+//
+//        SingleOutputStreamOperator<PaymentInfo> paymentInfoDS = paymentInfoDS1.flatMap(
+//                new RichFlatMapFunction<List<JSONObject>, PaymentInfo>() {
+//                    @Override
+//                    public void flatMap(List<JSONObject> jsonObj, Collector<PaymentInfo> out) throws Exception {
+//                        Iterator<JSONObject> it = jsonObj.iterator();
+//                        while (it.hasNext()) {
+//                            PaymentInfo paymentInfo = JSON.parseObject(it.next().toString(), PaymentInfo.class);
+//                            out.collect(paymentInfo);
+//                        }
+//                    }
+//                }
+//        );
 
-        SingleOutputStreamOperator<PaymentInfo> paymentInfoDS = paymentInfoDS1.flatMap(
-                new RichFlatMapFunction<List<JSONObject>, PaymentInfo>() {
-                    @Override
-                    public void flatMap(List<JSONObject> jsonObj, Collector<PaymentInfo> out) throws Exception {
-                        Iterator<JSONObject> it = jsonObj.iterator();
-                        while (it.hasNext()) {
-                            PaymentInfo paymentInfo = JSON.parseObject(it.next().toString(), PaymentInfo.class);
-                            out.collect(paymentInfo);
-                        }
-                    }
-                }
+        SingleOutputStreamOperator<PaymentInfo> paymentInfoDS = PaymentInfoDS.map(
+                jsonStr -> JSON.parseObject(jsonStr,PaymentInfo.class)
         );
 
 //        paymentInfoDS.print("paymentInfo>>>>>>>>>>>");
 
         //转换订单宽表流
-        SingleOutputStreamOperator<OrderWide> orderWideDS1 = OrderWideDS.map(
-                new RichMapFunction<String, OrderWide>() {
-
-                    @Override
-                    public OrderWide map(String jsonStr) throws Exception {
-                        OrderWide orderWide = JSON.parseObject(jsonStr,OrderWide.class);
-                                return orderWide;
-                    }
-                }
+//        SingleOutputStreamOperator<OrderWide> orderWideDS1 = OrderWideDS.map(
+//                new RichMapFunction<String, OrderWide>() {
+//
+//                    @Override
+//                    public OrderWide map(String jsonStr) throws Exception {
+//                        OrderWide orderWide = JSON.parseObject(jsonStr,OrderWide.class);
+//                                return orderWide;
+//                    }
+//                }
+//        );
+        SingleOutputStreamOperator<OrderWide> orderWideDS = OrderWideDS.map(
+                jsonStr ->JSON.parseObject(jsonStr,OrderWide.class)
         );
 
 
-     orderWideDS1.print("order>>>>>>>");
+//        orderWideDS.print("order>>>>>>>");
 
 
         //设置Watermark 以及提取事件时间字段
         //支付流watermark
-//        SingleOutputStreamOperator<PaymentInfo> paymentInfoWithWatermarkDS = paymentInfoDS.assignTimestampsAndWatermarks(
-//                WatermarkStrategy.<PaymentInfo>forBoundedOutOfOrderness(Duration.ofSeconds(10))
-//                        .withTimestampAssigner(
-//                                new SerializableTimestampAssigner<PaymentInfo>() {
-//                                    @Override
-//                                    public long extractTimestamp(PaymentInfo paymentInfo, long recordTimestamp) {
-//                                        //需要将字符串时间转换为毫秒数
-//                                        return DateTimeUtil.toTs(paymentInfo.getCallback_time());
-//                                    }
-//                                }
-//                        )
-//        );
+        SingleOutputStreamOperator<PaymentInfo> paymentInfoWithWatermarkDS = paymentInfoDS.assignTimestampsAndWatermarks(
+                WatermarkStrategy.<PaymentInfo>forBoundedOutOfOrderness(Duration.ofSeconds(10))
+                        .withTimestampAssigner(
+                                new SerializableTimestampAssigner<PaymentInfo>() {
+                                    @Override
+                                    public long extractTimestamp(PaymentInfo paymentInfo, long recordTimestamp) {
+                                        //需要将字符串时间转换为毫秒数
+                                        return DateTimeUtil.toTs(paymentInfo.getCallback_time());
+                                    }
+                                }
+                        )
+        );
 
 
         //订单流watermark
-//        SingleOutputStreamOperator<OrderWide> orderWideWithWatermarkDS = orderWideDS.assignTimestampsAndWatermarks(
-//                WatermarkStrategy.<OrderWide>forBoundedOutOfOrderness(Duration.ofSeconds(10))
-//                        .withTimestampAssigner(
-//                                new SerializableTimestampAssigner<OrderWide>() {
-//                                    @Override
-//                                    public long extractTimestamp(OrderWide orderWide, long recordTimpstamp) {
-//                                        return DateTimeUtil.toTs(orderWide.getCreate_time());
-//                                    }
-//                                }
-//                        )
-//        );
+        SingleOutputStreamOperator<OrderWide> orderWideWithWatermarkDS = orderWideDS.assignTimestampsAndWatermarks(
+                WatermarkStrategy.<OrderWide>forBoundedOutOfOrderness(Duration.ofSeconds(10))
+                        .withTimestampAssigner(
+                                new SerializableTimestampAssigner<OrderWide>() {
+                                    @Override
+                                    public long extractTimestamp(OrderWide orderWide, long recordTimpstamp) {
+                                        return DateTimeUtil.toTs(orderWide.getCreate_time());
+                                    }
+                                }
+                        )
+        );
 
 
         //对数据进行分组
         //支付流分组
-//        KeyedStream<PaymentInfo, Long> paymentInfoKeyedDS = paymentInfoWithWatermarkDS.keyBy(PaymentInfo::getId);
-//
-//        KeyedStream<OrderWide, Long> orderWideKeyedDS = orderWideWithWatermarkDS.keyBy(OrderWide::getOrder_id);
+        KeyedStream<PaymentInfo, Long> paymentInfoKeyedDS = paymentInfoWithWatermarkDS.keyBy(PaymentInfo::getId);
+
+        KeyedStream<OrderWide, Long> orderWideKeyedDS = orderWideWithWatermarkDS.keyBy(OrderWide::getOrder_id);
 
         //使用IntervalJoin关联两条流
 
-//        SingleOutputStreamOperator<PaymentWide> paymentWideDS = paymentInfoKeyedDS.intervalJoin(orderWideKeyedDS)
-//                .between(Time.seconds(-1800), Time.seconds(0))
-//                .process(
-//                        new ProcessJoinFunction<PaymentInfo, OrderWide, PaymentWide>() {
-//
-//                            @Override
-//                            public void processElement(PaymentInfo paymentInfo, OrderWide orderWide, Context context, Collector<PaymentWide> out) throws Exception {
-//                                out.collect(new PaymentWide(paymentInfo, orderWide));
-//                            }
-//                        }
-//                );
-//
-//        paymentWideDS.print("wide>>>>");
+        SingleOutputStreamOperator<PaymentWide> paymentWideDS = paymentInfoKeyedDS.intervalJoin(orderWideKeyedDS)
+                .between(Time.seconds(-1800), Time.seconds(0))
+                .process(
+                        new ProcessJoinFunction<PaymentInfo, OrderWide, PaymentWide>() {
 
-//        paymentWideDS.map(
-//                paymentWide -> JSON.toJSONString(paymentWide)
-//        ).addSink(
-//                MyKafkaUtil.getKafkaSink(paymentWideSinkTopic)
-//        );
+                            @Override
+                            public void processElement(PaymentInfo paymentInfo, OrderWide orderWide, Context context, Collector<PaymentWide> out) throws Exception {
+                                out.collect(new PaymentWide(paymentInfo, orderWide));
+                            }
+                        }
+                );
+//
+        paymentWideDS.print("wide>>>>");
+
+        paymentWideDS.map(
+                paymentWide -> JSON.toJSONString(paymentWide)
+        ).addSink(
+                MyKafkaUtil.getKafkaSink(paymentWideSinkTopic)
+        );
 
 
         env.execute();

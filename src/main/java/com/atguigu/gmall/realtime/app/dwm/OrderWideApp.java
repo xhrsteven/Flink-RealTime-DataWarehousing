@@ -40,7 +40,7 @@ public class OrderWideApp {
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        env.setParallelism(2);
+        env.setParallelism(3);
 
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
@@ -53,7 +53,7 @@ public class OrderWideApp {
          */
         String orderInfoSourceTopic = "dwd_order_info";
         String orderDetailSourceTopic = "dwd_order_detail";
-        String groupId = "order_wide_group";
+        String groupId = "order_wide_group1";
         String orderWideSinkTopic = "dwm_order_wide";
 
         //2.1 读取订单数据
@@ -70,78 +70,93 @@ public class OrderWideApp {
 
 //        //3.string -> json -> 实体类对象
 //        //3.1 转换订单数据结构
-        SingleOutputStreamOperator<List<JSONObject>> OrderInfoDS1 = orderInfoJsonStrDS.map(
-                new RichMapFunction<String, List<JSONObject>>() {
+//        SingleOutputStreamOperator<List<JSONObject>> OrderInfoDS1 = orderInfoJsonStrDS.map(
+//                new RichMapFunction<String, List<JSONObject>>() {
+//
+//                    @Override
+//                    public List<JSONObject> map(String jsonStr) throws Exception {
+//                        JSONArray jsonArr = JSON.parseArray(jsonStr);
+////                        System.out.println(jsonStr);
+//                        List<JSONObject> orderInfo= new ArrayList<JSONObject>();
+//                        for (int i = 0; i < jsonArr.size(); i++) {
+//                            JSONObject jsonObj = jsonArr.getJSONObject(i);
+//                            orderInfo.add(jsonObj);
+//                        }
+//                        return  orderInfo;
+//                    }
+//                });
+//
+//        SingleOutputStreamOperator<OrderInfo> OrderInfoDS = OrderInfoDS1.flatMap(
+//                new RichFlatMapFunction<List<JSONObject>, OrderInfo>() {
+//                    SimpleDateFormat sdf = null;
+//
+//                    @Override
+//                    public void open(Configuration parameters) throws Exception {
+//                        sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//                    }
+//                    @Override
+//                    public void flatMap(List<JSONObject> jsonObjects, Collector<OrderInfo> collector) throws Exception {
+//                        Iterator<JSONObject> iter = jsonObjects.iterator();
+//                        while (iter.hasNext()) {
+//                            OrderInfo orderInfo = JSON.parseObject(iter.next().toString(), OrderInfo.class);
+//                            orderInfo.setCreate_ts(sdf.parse(orderInfo.getCreate_time()).getTime());
+//                            orderInfo.setCreate_date(orderInfo.getCreate_date());
+//                            collector.collect(orderInfo);
+//                        }
+//                    }
+//                });
 
-                    @Override
-                    public List<JSONObject> map(String jsonStr) throws Exception {
-                        JSONArray jsonArr = JSON.parseArray(jsonStr);
-//                        System.out.println(jsonStr);
-                        List<JSONObject> orderInfo= new ArrayList<JSONObject>();
-                        for (int i = 0; i < jsonArr.size(); i++) {
-                            JSONObject jsonObj = jsonArr.getJSONObject(i);
-                            orderInfo.add(jsonObj);
-                        }
-                        return  orderInfo;
-                    }
-                });
+        SingleOutputStreamOperator<OrderInfo> orderInfoDS = orderInfoJsonStrDS.map(new RichMapFunction<String, OrderInfo>() {
+            SimpleDateFormat sdf = null;
 
-        SingleOutputStreamOperator<OrderInfo> OrderInfoDS = OrderInfoDS1.flatMap(
-                new RichFlatMapFunction<List<JSONObject>, OrderInfo>() {
-                    SimpleDateFormat sdf = null;
+            @Override
+            public void open(Configuration parameters) throws Exception {
+                sdf = new SimpleDateFormat("yyy-MM-dd HH:mm:ss");
+            }
 
-                    @Override
-                    public void open(Configuration parameters) throws Exception {
-                        sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                    }
-                    @Override
-                    public void flatMap(List<JSONObject> jsonObjects, Collector<OrderInfo> collector) throws Exception {
-                        Iterator<JSONObject> iter = jsonObjects.iterator();
-                        while (iter.hasNext()) {
-                            OrderInfo orderInfo = JSON.parseObject(iter.next().toString(), OrderInfo.class);
-                            orderInfo.setCreate_ts(sdf.parse(orderInfo.getCreate_time()).getTime());
-                            orderInfo.setCreate_date(orderInfo.getCreate_date());
-                            collector.collect(orderInfo);
-                        }
-                    }
-                });
-
+            @Override
+            public OrderInfo map(String jsonStr) throws Exception {
+                OrderInfo orderInfo = JSON.parseObject(jsonStr, OrderInfo.class);
+                orderInfo.setCreate_ts(sdf.parse(orderInfo.getCreate_time()).getTime());
+                return orderInfo;
+            }
+        });
 
 //        //3.2转换订单明细数据结构
-        SingleOutputStreamOperator<List<JSONObject>> OrderDetailDS1 = orderDetailJsonStrDS.map(
-                new MapFunction<String, List<JSONObject>>() {
-                    @Override
-                    public List<JSONObject> map(String jsonStr) throws Exception {
-                        JSONArray jsonArr = JSON.parseArray(jsonStr);
-//                        System.out.println(jsonStr);
-                        List<JSONObject> orderDetail= new ArrayList<JSONObject>();
-                        for (int i = 0; i < jsonArr.size(); i++) {
-                            JSONObject jsonObj = jsonArr.getJSONObject(i);
-                            orderDetail.add(jsonObj);
-                        }
-                              return  orderDetail;
-                    }
-                }
-        );
-
-        SingleOutputStreamOperator<OrderDetail> OrderDetailDS = OrderDetailDS1.flatMap(
-                new RichFlatMapFunction<List<JSONObject>, OrderDetail>() {
-                    SimpleDateFormat sdf = null;
-                    @Override
-                    public void open(Configuration parameters) throws Exception {
-                        sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                    }
-                    @Override
-                    public void flatMap(List<JSONObject> jsonObjects, Collector<OrderDetail> collector) throws Exception {
-                        Iterator<JSONObject> iter = jsonObjects.iterator();
-                        while (iter.hasNext()) {
-                            OrderDetail orderDetail = JSON.parseObject(iter.next().toString(), OrderDetail.class);
-                            orderDetail.setCreate_ts(sdf.parse(orderDetail.getCreate_time()).getTime());
-                            collector.collect(orderDetail);
-
-                        }
-                    }
-                });
+//        SingleOutputStreamOperator<List<JSONObject>> OrderDetailDS1 = orderDetailJsonStrDS.map(
+//                new MapFunction<String, List<JSONObject>>() {
+//                    @Override
+//                    public List<JSONObject> map(String jsonStr) throws Exception {
+//                        JSONArray jsonArr = JSON.parseArray(jsonStr);
+////                        System.out.println(jsonStr);
+//                        List<JSONObject> orderDetail= new ArrayList<JSONObject>();
+//                        for (int i = 0; i < jsonArr.size(); i++) {
+//                            JSONObject jsonObj = jsonArr.getJSONObject(i);
+//                            orderDetail.add(jsonObj);
+//                        }
+//                              return  orderDetail;
+//                    }
+//                }
+//        );
+//
+//        SingleOutputStreamOperator<OrderDetail> OrderDetailDS = OrderDetailDS1.flatMap(
+//                new RichFlatMapFunction<List<JSONObject>, OrderDetail>() {
+//                    SimpleDateFormat sdf = null;
+//                    @Override
+//                    public void open(Configuration parameters) throws Exception {
+//                        sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//                    }
+//                    @Override
+//                    public void flatMap(List<JSONObject> jsonObjects, Collector<OrderDetail> collector) throws Exception {
+//                        Iterator<JSONObject> iter = jsonObjects.iterator();
+//                        while (iter.hasNext()) {
+//                            OrderDetail orderDetail = JSON.parseObject(iter.next().toString(), OrderDetail.class);
+//                            orderDetail.setCreate_ts(sdf.parse(orderDetail.getCreate_time()).getTime());
+//                            collector.collect(orderDetail);
+//
+//                        }
+//                    }
+//                });
 
 
 //        OrderInfoDS.print("orderInfo>>>>>>");
@@ -157,8 +172,26 @@ public class OrderWideApp {
 //                    }
 //                });
 
-        SingleOutputStreamOperator<OrderInfo> orderInfoWithTsDS = OrderInfoDS.assignTimestampsAndWatermarks(
-                WatermarkStrategy.<OrderInfo>forBoundedOutOfOrderness(Duration.ofSeconds(3))
+        SingleOutputStreamOperator<OrderDetail> orderDetailDS = orderDetailJsonStrDS.map(new RichMapFunction<String, OrderDetail>() {
+            SimpleDateFormat sdf1 = null;
+
+            @Override
+            public void open(Configuration parameters) throws Exception {
+
+                sdf1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            }
+
+            @Override
+            public OrderDetail map(String jsonStr) throws Exception {
+                OrderDetail orderDetail = JSON.parseObject(jsonStr, OrderDetail.class);
+                orderDetail.setCreate_ts(sdf1.parse(orderDetail.getCreate_time()).getTime());
+                return orderDetail;
+            }
+        });
+
+
+        SingleOutputStreamOperator<OrderInfo> orderInfoWithTsDS = orderInfoDS.assignTimestampsAndWatermarks(
+                WatermarkStrategy.<OrderInfo>forBoundedOutOfOrderness(Duration.ofSeconds(10))
                         .withTimestampAssigner(new SerializableTimestampAssigner<OrderInfo>() {
                             @Override
                             public long extractTimestamp(OrderInfo orderInfo, long recordTimestamp) {
@@ -176,7 +209,7 @@ public class OrderWideApp {
 //            }
 //        });
 
-        SingleOutputStreamOperator<OrderDetail> orderDetailWithTsDS = OrderDetailDS.assignTimestampsAndWatermarks(
+        SingleOutputStreamOperator<OrderDetail> orderDetailWithTsDS = orderDetailDS.assignTimestampsAndWatermarks(
 
                 WatermarkStrategy.
                         <OrderDetail>forBoundedOutOfOrderness(Duration.ofSeconds(10)) //
@@ -330,7 +363,7 @@ public class OrderWideApp {
                 }, 1000, TimeUnit.SECONDS
         );
 
-//        orderWideWithTmDS.print("tm>>>>>>>>>>");
+        orderWideWithTmDS.print("tm>>>>>>>>>>");
 
         orderWideWithTmDS.map(orderWide -> JSON.toJSONString(orderWide))
                 .addSink(MyKafkaUtil.getKafkaSink(orderWideSinkTopic));

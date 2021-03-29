@@ -67,7 +67,7 @@ public class BaseLogApp {
                 }
         );
 
-//        jsonObjDS.print("json>>>>>>>>>>>>>>>>>>");
+//      jsonObjDS.print("json>>>>>>>>>>>>>>>>>>");
 
         //4.识别新老访客
         //保存mid某天方法情况（将首次访问日期作为状态保存起来） 在有日志过来的时候，从状态中获取日期
@@ -148,12 +148,14 @@ public class BaseLogApp {
                         if(startJsonObj!=null && startJsonObj.size()>0){
                             //如果是启动日志，输出到启动侧输出流
                             ctx.output(startTag,dataStr);
+//                            System.out.println(">>>"+startJsonObj);
                         }else{
                             out.collect(dataStr);
                             //如果不是启动日志 则为页面日志或者曝光日志(携带页面信息)
 //                            System.out.println("PageString:" + dataStr);
 
-                            JSONArray displays = jsonObj.getJSONArray("display");
+                            JSONArray displays = jsonObj.getJSONArray("displays");
+//                            System.out.println("dis>>>>>"+displays);
 
                             if(displays !=null && displays.size()>0){
                                 //遍历曝光日志 输出到侧输出流
@@ -178,9 +180,9 @@ public class BaseLogApp {
         DataStream<String> startDS = pageDS.getSideOutput(startTag);
         DataStream<String> displayDS = pageDS.getSideOutput(displayTag);
 
-       pageDS.print("page>>>>");
-//        startDS.print("start>>>>");
-     displayDS.print("display>>>>");
+        pageDS.print("page>>>>");
+        startDS.print("start>>>>");
+        displayDS.print("display>>>>");
 
         //6.将不同的流写回到不同的topic中 --dwd层
         FlinkKafkaProducer<String> StartSink = MyKafkaUtil.getKafkaSink(TOPIC_START);

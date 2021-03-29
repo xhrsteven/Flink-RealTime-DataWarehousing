@@ -35,9 +35,10 @@ public class DimSink extends RichSinkFunction<JSONObject> {
         //获取目标表的名称
         String tableName = jsonObj.getString("sink_table");
         //获取json中data
-        JSONArray jsonArr = jsonObj.getJSONArray("data");
-        for (int i = 0; i < jsonArr.size(); i++) {
-            JSONObject dataJsonObj = jsonArr.getJSONObject(i);
+//        JSONArray jsonArr = jsonObj.getJSONArray("data");
+        JSONObject dataJsonObj = jsonObj.getJSONObject("data");
+//        for (int i = 0; i < jsonArr.size(); i++) {
+//            JSONObject dataJsonObj = jsonArr.getJSONObject(i);
             if (dataJsonObj != null && dataJsonObj.size()>0) {
                 //根据data中属性和属性值 生产upsert语句
                 String upsertSql = genUpsertSql(tableName.toUpperCase(),dataJsonObj);
@@ -60,13 +61,13 @@ public class DimSink extends RichSinkFunction<JSONObject> {
                     }
                 }
                 //如果当前做的是更新操作，需要将redis中的缓存数据清除
-                if (jsonObj.getString("type").equals("UPDATE")) {
+                if (jsonObj.getString("type").equals("update")) {
                     DimUtil.deleteCached(tableName,dataJsonObj.getString("id"));
                 }
             }
         }
 
-    }
+
     //根据data属性和值 生成向Phoenix中插入数据的SQL语句
     private String genUpsertSql(String tableName, JSONObject dataJsonObj) {
 

@@ -8,6 +8,8 @@ import com.alibaba.fastjson.JSONObject;
 import com.atguigu.gmall.realtime.utils.MyKafkaUtil;
 //import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
 //import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.cep.*;
 import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.cep.pattern.conditions.SimpleCondition;
@@ -41,8 +43,8 @@ public class UserJumpDetailApp {
 
         //2.从Kafka中读取数据
         String sourceTopic = "dwd_page_log";
-        String groupId = "User_Jumper_Group";
-        String sinkTopic = "dwm_user_jump_detatil";
+        String groupId = "User_Jumper_Group1";
+        String sinkTopic = "dwm_user_jump_detail";
 
         FlinkKafkaConsumer<String> kafkasource = MyKafkaUtil.getKafkasource(sourceTopic, groupId);
 
@@ -53,21 +55,21 @@ public class UserJumpDetailApp {
 
 //        jsonObjDS.print("JSON>>>>");
         //注意 Flink1.12开始 默认时间语义就是事件时间，不需要额外指定，之前版本，需要如下语句指定事件时间语义
-//                env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+                env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
         //4.指定事件时间字段 --没有乱序的情况
-//        SingleOutputStreamOperator<JSONObject> jsonObjWithTSDS = jsonObjDS.assignTimestampsAndWatermarks(
-//                WatermarkStrategy.<JSONObject>forMonotonousTimestamps().withTimestampAssigner(
-//                        new SerializableTimestampAssigner<JSONObject>() {
-//                            @Override
-//                            public long extractTimestamp(JSONObject jsonObj, long l) {
-//                                return jsonObj.getLong("ts");
-//                            }
-//                        }
-//                ));
+        SingleOutputStreamOperator<JSONObject> jsonObjWithTSDS = jsonObjDS.assignTimestampsAndWatermarks(
+                WatermarkStrategy.<JSONObject>forMonotonousTimestamps().withTimestampAssigner(
+                        new SerializableTimestampAssigner<JSONObject>() {
+                            @Override
+                            public long extractTimestamp(JSONObject jsonObj, long l) {
+                                return jsonObj.getLong("ts");
+                            }
+                        }
+                ));
 
         //5.按照mid进行分组
-        KeyedStream<JSONObject, String> keyByMidDS = jsonObjDS.keyBy(
+        KeyedStream<JSONObject, String> keyByMidDS = jsonObjWithTSDS.keyBy(
                 jsonObj -> jsonObj.getJSONObject("common").getString("mid"));
 
         //确认CEP依赖
@@ -153,7 +155,7 @@ public class UserJumpDetailApp {
         //从侧输出流中获取数据
         DataStream<String> jumpDS = filterTimeoutDS.getSideOutput(timeoutTag);
 
-        jumpDS.print("time>>>>");
+        jumpDS.print("jump::");
 
         //将跳出数据写回到kafka dwm
         jumpDS.addSink(MyKafkaUtil.getKafkaSink(sinkTopic));

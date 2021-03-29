@@ -87,7 +87,7 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
             tableProcessMap.put(key, tableProcess);
 
             //========3.如果当前配置项是维度配置，需要向Hbase表中保存数据，那么我们需要判断phoenix中是否存在这张表=====================
-            if (TableProcess.SINK_TYPE_HBASE.equals(sinkType) && "INSERT".equals(operateType)) {
+            if (TableProcess.SINK_TYPE_HBASE.equals(sinkType) && "insert".equals(operateType)) {
                 boolean notExist = existsTables.add(sourceTable);
                 //如果在内存Set集合中不存在这个表，那么在Phoenix中创建这种表
                 if (notExist) {
@@ -200,7 +200,7 @@ public class TableProcessFunction extends ProcessFunction<JSONObject, JSONObject
 //                System.out.println(sinkColumns);
                 //如果指定了sinkColumn，需要对保留的字段进行过滤处理
                 if (sinkColumns != null && sinkColumns.length() > 0) {
-                    jsonObj.getJSONArray("data");
+                    jsonObj.getJSONObject("data");
                 }
             } else {
                     System.out.println("NO this Key:" + key + " in MySQL");
